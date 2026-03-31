@@ -78,8 +78,8 @@ export default function Dashboard() {
       {/* --- QUICK STATS (Mobile: 2 Columns | Desktop: 4 Columns) --- */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
         {[
-          { label: "Revenue", value: `₹${totalRevenue}`, icon: <MdAttachMoney />, color: "text-emerald-600 bg-emerald-50" },
-          { label: "Students", value: enrollments.length, icon: <MdPeople />, color: "text-blue-600 bg-blue-50" },
+          // { label: "Revenue", value: `₹${totalRevenue}`, icon: <MdAttachMoney />, color: "text-emerald-600 bg-emerald-50" },
+          // { label: "Students", value: enrollments.length, icon: <MdPeople />, color: "text-blue-600 bg-blue-50" },
           { label: "Internships", value: internships.length, icon: <MdWork />, color: "text-indigo-600 bg-indigo-50" },
           { label: "Mentors", value: mentors.length, icon: <MdStar />, color: "text-orange-500 bg-orange-50" },
         ].map((stat, i) => (
@@ -185,9 +185,9 @@ export default function Dashboard() {
               </tr>
             </thead>
           </table>
-          {enrollments.length === 0 && (
+          {/* {enrollments.length === 0 && (
             <div className="p-10 text-center text-[10px] text-gray-300 font-bold uppercase tracking-widest">No Recent Data</div>
-          )}
+          )} */}
         </div>
       </div>
     </div>

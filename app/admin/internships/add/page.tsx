@@ -85,86 +85,83 @@ export default function AddInternship({
     setPreview(URL.createObjectURL(file));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setIsSubmitting(true);
 
-    try {
-      let imageUrl = formData.imageUrl || null;
-      let public_id = formData.public_id || null;
+  try {
+    let imageUrl = formData.imageUrl || null;
+    let public_id = formData.public_id || null;
 
-      if (image) {
-        const formDataImg = new FormData();
-        formDataImg.append("image", image);
+    // ✅ STEP 1: Upload image if exists
+    if (image) {
+      const formDataImg = new FormData();
+      formDataImg.append("image", image);
 
-        const res = await fetch(
-          `${API}/upload/internship/images/`,
-          {
-            method: "POST",
-            body: formDataImg,
-          },
-        );
+      const res = await fetch(`${API}/upload/internship/images/`, {
+        method: "POST",
+        body: formDataImg,
+      });
 
-        if (!res.ok) throw new Error("Image upload failed");
-        const data = await res.json();
-        imageUrl = data.imageUrl;
-        public_id = data.publicId;
-      }
+      if (!res.ok) throw new Error("Image upload failed");
 
-      // ✅ STEP 2: Prepare final data
-      const finalData = {
-        ...formData,
-        imageUrl,
-        public_id,
-      };
+      const data = await res.json();
+      imageUrl = data.imageUrl;
+      public_id = data.publicId;
+    }
 
-      // ✅ STEP 3: CREATE
-      if (!isEdit) {
-        const res = await fetch(`${API}/upload/internship/`, {
-          method: "POST",
+    // ✅ STEP 2: Prepare final data
+    const finalData = {
+      ...formData,
+      imageUrl,
+      public_id,
+    };
+
+    let res;
+
+    // ✅ STEP 3: CREATE
+    if (!isEditMode) {
+      res = await fetch(`${API}/upload/internship/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(finalData),
+      });
+
+      if (!res.ok) throw new Error("Create failed");
+
+      toast.success("Internship created!");
+    }
+
+    // ✅ STEP 4: UPDATE
+    else {
+      res = await fetch(
+        `${API}/upload/update_internship/${internshipId}/`,
+        {
+          method: "PUT",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(finalData),
-        });
+        }
+      );
 
-        if (!res.ok) throw new Error("Create failed");
+      if (!res.ok) throw new Error("Update failed");
 
-        toast.success("Internship created!");
-      }
-
-      // ✅ STEP 4: UPDATE
-      else {
-        const res = await fetch(
-          `${API}/upload/update_internship/${internshipId}/`,
-          {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(finalData),
-          },
-        );
-
-        if (!res.ok) throw new Error("Update failed");
-
-      const res = await fetch(url, {
-        method: isEditMode ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(finalData),
-      });
-
-      if (!res.ok) throw new Error("Request failed");
-      
-      toast.success(isEditMode ? "Internship updated!" : "Internship published!");
-      navigate.push("/admin/internships");
-    } catch (error) {
-      console.error(error);
-      toast.error("Something went wrong!");
-    } finally {
-      setIsSubmitting(false);
+      toast.success("Internship updated!");
     }
-  };
+
+    // ✅ Redirect (common for both)
+    navigate.push("/admin/internships");
+
+  } catch (error) {
+    console.error(error);
+    toast.error("Something went wrong!");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <div className="min-h-screen p-6 md:p-12 lg:p-16">
