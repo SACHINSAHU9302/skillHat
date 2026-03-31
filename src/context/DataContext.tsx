@@ -2,18 +2,7 @@
 
 import { createContext, useContext, useState, ReactNode } from "react";
 
-export interface Internship {
-  id: string;
-  title: string;
-  company: string;
-  location: string;
-  duration: string;
-  stipend: string;
-  description: string;
-  requirements: string;
-  status: "Active" | "Inactive";
-  createdAt: string;
-}
+
 
 export interface Course {
   id: string;
@@ -53,14 +42,10 @@ export interface Enrollment {
 }
 
 interface DataContextType {
-  internships: Internship[];
   courses: Course[];
   mentors: Mentor[];
   enrollments: Enrollment[];
-  addInternship: (internship: Omit<Internship, "id" | "createdAt">) => void;
-  updateInternship: (id: string, internship: Omit<Internship, "id" | "createdAt">) => void;
   deleteInternship: (id: string) => void;
-  getInternship: (id: string) => Internship | undefined;
   addCourse: (course: Omit<Course, "id" | "createdAt" | "enrollmentCount">) => void;
   updateCourse: (id: string, course: Omit<Course, "id" | "createdAt" | "enrollmentCount">) => void;
   deleteCourse: (id: string) => void;
@@ -114,32 +99,7 @@ const initialMentors: Mentor[] = [
   },
 ];
 
-const initialInternships: Internship[] = [
-  {
-    id: "1",
-    title: "Frontend Developer Intern",
-    company: "Tech Corp",
-    location: "Mumbai, India",
-    duration: "3 months",
-    stipend: "₹15,000/month",
-    description: "Work on modern React applications and learn from experienced developers.",
-    requirements: "Knowledge of HTML, CSS, JavaScript, React",
-    status: "Active",
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "2",
-    title: "Data Science Intern",
-    company: "AI Solutions",
-    location: "Bangalore, India",
-    duration: "6 months",
-    stipend: "₹20,000/month",
-    description: "Gain hands-on experience in machine learning and data analysis.",
-    requirements: "Python, Pandas, Basic ML knowledge",
-    status: "Active",
-    createdAt: new Date().toISOString(),
-  },
-];
+
 
 const initialCourses: Course[] = [
   {
@@ -195,62 +155,13 @@ const initialEnrollments: Enrollment[] = [
     enrolledDate: "2026-03-15T10:30:00Z",
     status: "Active",
   },
-  {
-    id: "2",
-    courseId: "1",
-    studentName: "Neha Gupta",
-    studentEmail: "neha@example.com",
-    enrolledDate: "2026-03-16T14:20:00Z",
-    status: "Active",
-  },
-  {
-    id: "3",
-    courseId: "2",
-    studentName: "Arjun Reddy",
-    studentEmail: "arjun@example.com",
-    enrolledDate: "2026-03-14T09:15:00Z",
-    status: "Completed",
-  },
-  {
-    id: "4",
-    courseId: "3",
-    studentName: "Sneha Iyer",
-    studentEmail: "sneha@example.com",
-    enrolledDate: "2026-03-20T11:45:00Z",
-    status: "Active",
-  },
 ];
 
 export function DataProvider({ children }: { children: ReactNode }) {
-  const [internships, setInternships] = useState<Internship[]>(initialInternships);
   const [courses, setCourses] = useState<Course[]>(initialCourses);
   const [mentors, setMentors] = useState<Mentor[]>(initialMentors);
   const [enrollments, setEnrollments] = useState<Enrollment[]>(initialEnrollments);
 
-  const addInternship = (internship: Omit<Internship, "id" | "createdAt">) => {
-    const newInternship: Internship = {
-      ...internship,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-    };
-    setInternships([...internships, newInternship]);
-  };
-
-  const updateInternship = (id: string, internship: Omit<Internship, "id" | "createdAt">) => {
-    setInternships(
-      internships.map((item) =>
-        item.id === id ? { ...internship, id, createdAt: item.createdAt } : item
-      )
-    );
-  };
-
-  const deleteInternship = (id: string) => {
-    setInternships(internships.filter((item) => item.id !== id));
-  };
-
-  const getInternship = (id: string) => {
-    return internships.find((item) => item.id === id);
-  };
 
   const addCourse = (course: Omit<Course, "id" | "createdAt" | "enrollmentCount">) => {
     const newCourse: Course = {
@@ -320,14 +231,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
   return (
     <DataContext.Provider
       value={{
-        internships,
         courses,
         mentors,
         enrollments,
-        addInternship,
-        updateInternship,
-        deleteInternship,
-        getInternship,
         addCourse,
         updateCourse,
         deleteCourse,

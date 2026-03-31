@@ -1,171 +1,182 @@
 "use client";
 
-import { useData } from "@/src/context/DataContext";
-import { MdAdd, MdEdit, MdDelete } from "react-icons/md";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Button } from "@/src/components/ui/button";
-import { useState } from "react";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "framer-motion"; 
+import {
+  MdAdd,
+  MdCurrencyRupee,
+  MdDelete,
+  MdEdit,
+  MdBusiness,
+  MdLocationOn,
+} from "react-icons/md";
 import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/src/components/ui/alert-dialog";
 
-export default function Internships() {
-  const { internships, deleteInternship } = useData();
+export default function InternshipsPage() {
+  const [internships, setInternships] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const handleDelete = () => {
-    if (deleteId) {
-      deleteInternship(deleteId);
+  const fetchInternships = async () => {
+    try {
+      const res = await fetch("https://skillhat-backend.onrender.com/upload/internships/list/");
+      const data = await res.json();
+      setInternships(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInternships();
+  }, []);
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    try {
+      await fetch(`https://skillhat-backend.onrender.com/upload/delete_internship/${deleteId}/`, { 
+        method: "DELETE" 
+      });
+      setInternships((prev) => prev.filter((item) => item._id !== deleteId));
       setDeleteId(null);
+    } catch (err) {
+      console.error(err);
     }
   };
 
   return (
-    <div className="p-8">
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="flex items-center justify-between mb-8"
-      >
+    /* Removed bg-white from main container */
+    <div className="min-h-screen">
+      
+      {/* CLEAN HEADER - Background and Border removed */}
+      <div className="flex justify-between items-center px-6 py-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Internships</h1>
-          <p className="text-gray-600 mt-2">Manage all internship listings</p>
+          <h1 className="text-2xl font-bold text-gray-800 tracking-tight">
+            Internships
+            <span className="text-xs text-gray-400 ml-3 font-normal uppercase tracking-[0.2em]">
+              Admin Panel
+            </span>
+          </h1>
         </div>
-        <Link href="/admin/internships/add">
-          <Button className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
-            <MdAdd className="w-5 h-5" />
-            Add Internships
-          </Button>
-        </Link>
-      </motion.div>
 
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-lg"
-      >
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Title
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Company
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Location
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Duration
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Stipend
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {internships.map((internship, index) => (
-                <motion.tr
-                  key={internship.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                  className="hover:bg-gray-50 transition-colors"
+        <Link href="/admin/internships/add">
+          <button className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-[10px] tracking-widest transition-all hover:bg-indigo-700 active:scale-95 shadow-lg shadow-indigo-100 uppercase">
+            <MdAdd className="text-lg" />
+            <span>Add New</span>
+          </button>
+        </Link>
+      </div>
+
+      {/* COMPACT AUTO-GRID */}
+      <div className="p-4 md:p-6 max-w-[1700px] mx-auto">
+        {loading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="h-48 bg-gray-100/50 rounded-2xl animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
+            <AnimatePresence mode="popLayout">
+              {internships.map((item, index) => (
+                <motion.div
+                  key={item._id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: index * 0.02 }}
+                  className="bg-white border border-gray-100 rounded-2xl overflow-hidden flex flex-col hover:border-indigo-200 hover:shadow-md transition-all group h-full"
                 >
-                  <td className="px-6 py-4">
-                    <div className="text-sm font-medium text-gray-900">
-                      {internship.title}
+                  {/* COMPACT IMAGE SECTION */}
+                  <div className="relative h-36 w-full overflow-hidden bg-gray-50">
+                    <img
+                      src={item.imageUrl || "/placeholder.jpg"}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      alt={item.title}
+                    />
+                    <div className={`absolute top-2 right-2 text-[8px] px-1.5 py-0.5 rounded font-black uppercase shadow-sm ${
+                      item.status === "Active" ? "bg-green-500 text-white" : "bg-gray-400 text-white"
+                    }`}>
+                      {item.status}
                     </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-600">
-                      {internship.company}
+                  </div>
+
+                  {/* CONTENT SECTION */}
+                  <div className="p-3 flex flex-col flex-grow">
+                    <div className="flex-grow">
+                      <h2 className="text-[12px] font-bold text-gray-900 line-clamp-1 group-hover:text-indigo-600 transition-colors capitalize leading-tight">
+                        {item.title}
+                      </h2>
+                      
+                      <div className="flex items-center gap-1 text-[9px] text-gray-400 mt-1 truncate font-medium">
+                        <MdBusiness className="text-indigo-400 shrink-0" />
+                        <span className="truncate">{item.company}</span>
+                      </div>
+
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-[9px] text-gray-500 font-bold bg-gray-50 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                           <MdLocationOn className="text-[10px]" /> {item.location}
+                        </span>
+                      </div>
+                      
+                      <p className="text-[10px] text-gray-500 line-clamp-2 leading-tight h-7 mt-2 italic opacity-70">
+                        {item.description}
+                      </p>
                     </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-600">
-                      {internship.location}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-600">
-                      {internship.duration}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm font-medium text-blue-600">
-                      {internship.stipend}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`inline-flex px-2 py-1 text-xs rounded-full font-medium ${
-                        internship.status === "Active"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-gray-100 text-gray-800"
-                      }`}
-                    >
-                      {internship.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm">
-                    <div className="flex items-center gap-2">
-                      <Link href={`/internships/edit/${internship.id}`}>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="hover:bg-blue-50"
+
+                    {/* FOOTER ACTIONS */}
+                    <div className="mt-3 pt-2 border-t border-gray-50 flex items-center justify-between">
+                      <div className="flex items-center text-emerald-600 font-black text-xs">
+                        <MdCurrencyRupee className="text-[10px]" />
+                        {isNaN(Number(item.stipend)) ? "0" : Number(item.stipend).toLocaleString("en-IN")}
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <Link href={`/admin/internships/edit/${item._id}`}>
+                          <button className="p-1.5 rounded-lg bg-gray-50 text-gray-300 hover:text-indigo-600 hover:bg-indigo-50 transition-colors">
+                            <MdEdit className="w-3.5 h-3.5" />
+                          </button>
+                        </Link>
+                        <button
+                          onClick={() => setDeleteId(item._id)}
+                          className="p-1.5 rounded-lg bg-gray-50 text-gray-300 hover:text-red-600 hover:bg-red-50 transition-colors"
                         >
-                          <MdEdit className="w-4 h-4 text-blue-600" />
-                        </Button>
-                      </Link>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setDeleteId(internship.id)}
-                        className="hover:bg-red-50"
-                      >
-                        <MdDelete className="w-4 h-4 text-red-600" />
-                      </Button>
+                          <MdDelete className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
-                  </td>
-                </motion.tr>
+                  </div>
+                </motion.div>
               ))}
-            </tbody>
-          </table>
-        </div>
-      </motion.div>
+            </AnimatePresence>
+          </div>
+        )}
+      </div>
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-[280px] rounded-2xl p-5 border-none">
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete this internship. This action cannot
-              be undone.
-            </AlertDialogDescription>
+            <AlertDialogTitle className="text-sm font-bold text-center text-gray-800">Delete Listing?</AlertDialogTitle>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+          <AlertDialogFooter className="mt-4 flex flex-row gap-2">
+            <AlertDialogCancel className="flex-1 mt-0 h-8 text-[11px] rounded-lg border-gray-100">No</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="flex-1 bg-red-600 hover:bg-red-700 h-8 text-[11px] rounded-lg"
+            >
+              Delete
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -1,22 +1,46 @@
 "use client";
 
-import { useRouter, useParams } from "next/navigation"; // Next.js routing
-import { useData } from "@/src/context/DataContext";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { 
+  MdArrowBack, 
+  MdCloudUpload, 
+  MdPerson, 
+  MdSchool, 
+  MdStars, 
+  MdEmail, 
+  MdDescription, 
+  MdBarChart, 
+  MdGroup, 
+  MdSettings,
+  MdPhotoSizeSelectActual,
+  MdCheckCircle
+} from "react-icons/md";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import { Label } from "@/src/components/ui/label";
 import { Textarea } from "@/src/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/src/components/ui/select";
-import { MdArrowBack } from "react-icons/md";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
-import { motion } from "motion/react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/src/components/ui/select";
+import { motion } from "framer-motion";
 
-export default function AddMentor() {
-  const { id } = useParams();
-  const router = useRouter(); // Next.js router
-  const { addMentor, updateMentor, getMentor } = useData();
-  const isEdit = !!id;
+export default function AddMentor({
+  initialData,
+  isEditMode,
+}: {
+  initialData?: any;
+  isEditMode?: boolean;
+}) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [image, setImage] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string>("");
+  const [error, setError] = useState("");
 
   const [formData, setFormData] = useState({
     name: "",
@@ -24,172 +48,294 @@ export default function AddMentor() {
     expertise: "",
     bio: "",
     experience: "",
-    rating: 4.5,
-    status: "Active" as "Active" | "Inactive",
+    rating: 0,
+    totalStudents: 0,
+    status: "Active",
   });
 
   useEffect(() => {
-    if (isEdit && id) {
-      const mentor = getMentor(id as string);
-      if (mentor) {
-        setFormData({
-          name: mentor.name,
-          email: mentor.email,
-          expertise: mentor.expertise,
-          bio: mentor.bio,
-          experience: mentor.experience,
-          rating: mentor.rating,
-          status: mentor.status,
-        });
-      }
+    if (initialData) {
+      setFormData({
+        name: initialData.name || "",
+        email: initialData.email || "",
+        expertise: initialData.expertise || "",
+        bio: initialData.bio || "",
+        experience: initialData.experience || "",
+        rating: initialData.rating || 0,
+        totalStudents: initialData.totalStudents || 0,
+        status: initialData.status || "Active",
+      });
+      if (initialData.imageUrl) setPreview(initialData.imageUrl);
     }
-  }, [id, isEdit, getMentor]);
+  }, [initialData]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (isEdit && id) {
-      updateMentor(id as string, formData);
-      toast.success("Mentor updated successfully!");
-    } else {
-      addMentor(formData);
-      toast.success("Mentor added successfully!");
+  const handleImageChange = (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      setError("Only image files are allowed");
+      return;
     }
-    
-    router.push("/admin/mentors");
+    setError("");
+    setImage(file);
+    setPreview(URL.createObjectURL(file));
   };
 
-  const handleChange = (field: string, value: string | number) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+  const handleChange = (e: any) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: name === "rating" || name === "totalStudents" ? Number(value) : value,
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      setError("");
+      const formDataToSend = new FormData();
+      Object.entries(formData).forEach(([key, value]) => {
+        formDataToSend.append(key, String(value));
+      });
+      if (image) formDataToSend.append("image", image);
+
+      const url = isEditMode && initialData?._id
+        ? `https://skillhat-backend.onrender.com/api/update_mentor/${initialData._id}/`
+        : "https://skillhat-backend.onrender.com/api/mentor/";
+
+      const res = await fetch(url, {
+        method: isEditMode ? "PUT" : "POST",
+        body: formDataToSend,
+      });
+
+      if (!res.ok) throw new Error("Operation failed");
+      router.push("/admin/mentors");
+    } catch (err: any) {
+      setError(err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="p-8">
-      <Button
-        variant="ghost"
-        className="mb-6 flex items-center gap-2 hover:bg-gray-100"
-        onClick={() => router.push("/admin/mentors")}
-      >
-        <MdArrowBack className="w-5 h-5" />
-        Back to Mentors
-      </Button>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="max-w-2xl"
-      >
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          {isEdit ? "Edit Mentor" : "Add New Mentor"}
-        </h1>
-        <p className="text-gray-600 mb-8">
-          {isEdit ? "Update mentor profile details" : "Fill in the details to create a new mentor profile"}
-        </p>
-
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg border border-gray-200 p-6 space-y-6 shadow-sm">
-          <div>
-            <Label htmlFor="name">Full Name *</Label>
-            <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => handleChange("name", e.target.value)}
-              placeholder="e.g. Rahul Sharma"
-              required
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="email">Email Address *</Label>
-            <Input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => handleChange("email", e.target.value)}
-              placeholder="e.g. rahul@example.com"
-              required
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="expertise">Expertise *</Label>
-            <Input
-              id="expertise"
-              value={formData.expertise}
-              onChange={(e) => handleChange("expertise", e.target.value)}
-              placeholder="e.g. Web Development, JavaScript, React"
-              required
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="bio">Bio *</Label>
-            <Textarea
-              id="bio"
-              value={formData.bio}
-              onChange={(e) => handleChange("bio", e.target.value)}
-              placeholder="Write a brief bio about the mentor..."
-              rows={4}
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="experience">Experience *</Label>
-              <Input
-                id="experience"
-                value={formData.experience}
-                onChange={(e) => handleChange("experience", e.target.value)}
-                placeholder="e.g. 5 years"
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="rating">Rating (0-5) *</Label>
-              <Input
-                id="rating"
-                type="number"
-                step="0.1"
-                min="0"
-                max="5"
-                value={formData.rating}
-                onChange={(e) => {
-                  const val = parseFloat(e.target.value);
-                  handleChange("rating", isNaN(val) ? 0 : val);
-                }}
-                required
-              />
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="status">Status *</Label>
-            <Select value={formData.status} onValueChange={(value) => handleChange("status", value)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Active">Active</SelectItem>
-                <SelectItem value="Inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex gap-4 pt-4">
-            <Button type="submit" className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-              {isEdit ? "Update Mentor" : "Add Mentor"}
-            </Button>
+    <div className="min-h-screen p-6 md:p-12 lg:p-16">
+      <div className="w-full max-w-5xl mx-auto">
+        
+        {/* TOP BAR */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
             <Button
-              type="button"
-              variant="outline"
+              variant="ghost"
+              className="mb-4 pl-0 flex items-center gap-2 hover:bg-transparent text-gray-400 hover:text-indigo-600 font-bold transition-colors"
               onClick={() => router.push("/admin/mentors")}
             >
-              Cancel
+              <MdArrowBack className="text-xl" />
+              Back to Mentors
             </Button>
+            <h1 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tight">
+              {isEditMode ? "Edit Profile" : "Add Mentor"}
+            </h1>
+            <p className="text-gray-400 font-medium mt-2">Create a professional profile for your experts.</p>
+          </motion.div>
+        </div>
+
+        {error && (
+          <div className="mb-6 text-red-600 text-xs font-bold bg-red-50 p-4 rounded-2xl border border-red-100 animate-pulse">
+            {error}
           </div>
-        </form>
-      </motion.div>
+        )}
+
+        <motion.form 
+          initial={{ opacity: 0, y: 20 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          onSubmit={handleSubmit} 
+          className="grid grid-cols-1 lg:grid-cols-12 gap-10"
+        >
+          {/* LEFT: PHOTO UPLOAD */}
+          <div className="lg:col-span-4 space-y-4">
+            <Label className="text-[10px] uppercase tracking-[0.2em] font-black text-gray-400 ml-1 flex items-center gap-2">
+              <MdPhotoSizeSelectActual className="text-indigo-500" /> Mentor Photo
+            </Label>
+            <div className="relative group overflow-hidden rounded-[32px] border-2 border-dashed border-gray-200 bg-white/50 hover:bg-white hover:border-indigo-200 transition-all cursor-pointer aspect-square flex items-center justify-center shadow-sm">
+              <input
+                type="file"
+                className="hidden"
+                id="imageUpload"
+                onChange={(e) => e.target.files?.[0] && handleImageChange(e.target.files[0])}
+              />
+              <label htmlFor="imageUpload" className="cursor-pointer w-full h-full flex items-center justify-center">
+                {preview ? (
+                  <div className="relative w-full h-full">
+                    <img src={preview} alt="Preview" className="w-full h-full object-cover rounded-[32px]" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-[32px]">
+                       <MdCloudUpload className="text-white text-4xl" />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center p-6 text-gray-400">
+                    <MdCloudUpload className="text-4xl mx-auto mb-2 group-hover:scale-110 transition-transform text-indigo-400" />
+                    <p className="font-bold text-sm text-gray-700">Upload Photo</p>
+                  </div>
+                )}
+              </label>
+            </div>
+
+            <div className="p-6 bg-indigo-50/50 rounded-3xl border border-indigo-100/50">
+               <h4 className="text-xs font-black text-indigo-900 uppercase tracking-widest mb-2 flex items-center gap-2">
+                 <MdCheckCircle className="text-indigo-600 text-lg" /> Profile Tip
+               </h4>
+               <p className="text-[11px] leading-relaxed text-indigo-700 font-medium">
+                 A professional headshot increases trust and engagement from students.
+               </p>
+            </div>
+          </div>
+
+          {/* RIGHT: DETAILS */}
+          <div className="lg:col-span-8 space-y-8">
+            <div className="space-y-6">
+              
+              {/* Name & Email */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                    <MdPerson className="text-indigo-500 text-lg" /> Full Name
+                  </Label>
+                  <Input
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    placeholder="e.g. John Doe"
+                    required
+                    className="rounded-2xl h-12 border-gray-200 bg-white/70 shadow-sm font-bold focus:ring-2 focus:ring-indigo-100"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                    <MdEmail className="text-indigo-500 text-lg" /> Email Address
+                  </Label>
+                  <Input
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="john@example.com"
+                    required
+                    className="rounded-2xl h-12 border-gray-200 bg-white/70 shadow-sm font-bold"
+                  />
+                </div>
+              </div>
+
+              {/* Expertise & Experience */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                    <MdSchool className="text-indigo-500 text-lg" /> Expertise
+                  </Label>
+                  <Input
+                    name="expertise"
+                    value={formData.expertise}
+                    onChange={handleChange}
+                    placeholder="e.g. React, UI/UX"
+                    className="rounded-2xl h-12 border-gray-200 bg-white/70 shadow-sm font-bold"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                    <MdStars className="text-indigo-500 text-lg" /> Experience
+                  </Label>
+                  <Input
+                    name="experience"
+                    value={formData.experience}
+                    onChange={handleChange}
+                    placeholder="e.g. 5+ Years"
+                    className="rounded-2xl h-12 border-gray-200 bg-white/70 shadow-sm font-bold"
+                  />
+                </div>
+              </div>
+
+              {/* Bio */}
+              <div className="space-y-2">
+                <Label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                   <MdDescription className="text-indigo-500 text-lg" /> Professional Bio
+                </Label>
+                <Textarea
+                  name="bio"
+                  value={formData.bio}
+                  onChange={handleChange}
+                  placeholder="Tell us about your professional journey..."
+                  rows={4}
+                  className="rounded-2xl border-gray-200 bg-white/70 focus:bg-white resize-none p-4 font-medium shadow-sm"
+                />
+              </div>
+
+              {/* Stats & Status */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+                <div className="space-y-2">
+                  <Label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                    <MdBarChart className="text-indigo-500 text-lg" /> Rating (0-5)
+                  </Label>
+                  <Input
+                    name="rating"
+                    type="number"
+                    step="0.1"
+                    value={formData.rating}
+                    onChange={handleChange}
+                    className="rounded-2xl h-12 border-gray-200 bg-white/70 shadow-sm font-bold"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                    <MdGroup className="text-indigo-500 text-lg" /> Students
+                  </Label>
+                  <Input
+                    name="totalStudents"
+                    type="number"
+                    value={formData.totalStudents}
+                    onChange={handleChange}
+                    className="rounded-2xl h-12 border-gray-200 bg-white/70 shadow-sm font-bold"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                    <MdSettings className="text-indigo-500 text-lg" /> Status
+                  </Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(val) => setFormData({...formData, status: val})}
+                  >
+                    <SelectTrigger className="rounded-2xl h-12 border-gray-200 bg-white shadow-sm font-bold">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      <SelectItem value="Active" className="text-green-600 font-bold">Active</SelectItem>
+                      <SelectItem value="Inactive" className="text-gray-400 font-bold">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-6">
+                <Button
+                  disabled={loading}
+                  type="submit"
+                  className="flex-1 h-12 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-widest text-[10px] shadow-xl shadow-indigo-100 transition-all active:scale-95"
+                >
+                  {loading ? "Saving..." : isEditMode ? "Update Profile" : "Create Mentor"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-12 px-8 rounded-2xl border-gray-200 bg-white font-bold text-[10px] uppercase tracking-widest hover:bg-gray-50 shadow-sm"
+                  onClick={() => router.push("/admin/mentors")}
+                >
+                  Cancel
+                </Button>
+              </div>
+
+            </div>
+          </div>
+        </motion.form>
+      </div>
     </div>
   );
 }
